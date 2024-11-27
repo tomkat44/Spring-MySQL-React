@@ -1,0 +1,77 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.2
+    container_name: dockerized_mysql
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: user
+      MYSQL_DATABASE: studentform
+    volumes:
+      - type: volume
+        source: mysql-data
+        target: /var/lib/mysql
+    networks:
+      - localnet
+
+  backend:
+    depends_on:
+      - mysql
+    container_name: dockerized_backend
+    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/studentform
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+#      DB_HOST: mysql:3306
+#      DB_USER: user
+#      DB_PASSWORD: user
+#      DB_DATABASE: studentform
+    ports:
+      - "8080:8080"
+    networks:
+      - localnet
+
+  frontend:
+    depends_on:
+      - backend
+    container_name: dockerized_frontend
+    restart: always
+    build:
+      context: ../frontendstudent
+      dockerfile: Dockerfile
+      args:
+        - VITE_BACKEND_HOST
+    ports:
+      - "3000:3000"
+    networks:
+      - localnet
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8081:80
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root
+      PMA_ARBITRARY: 1
+    networks:
+      - localnet
+
+volumes:
+  mysql-data:
+
+
+networks:
+  localnet:
+    driver: bridge
+
